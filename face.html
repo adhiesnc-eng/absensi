@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="id" class="antialiased">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Daftar Pegawai - Puskesmas Sampanahan</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Plus Jakarta Sans', 'sans-serif'] },
+                    colors: { 
+                        primary: { DEFAULT: '#0d9488', dark: '#0f766e', light: '#f0fdfa' },
+                        medical: '#10b981'
+                    },
+                    animation: {
+                        'float': 'float 6s ease-in-out infinite',
+                        'float-slow': 'float 8s ease-in-out infinite',
+                        'pulse-soft': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                    },
+                    keyframes: {
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0) rotate(0deg)' },
+                            '50%': { transform: 'translateY(-20px) rotate(5deg)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        :root { --sat: env(safe-area-inset-top); --sab: env(safe-area-inset-bottom); }
+        body { background-color: #ffffff; -webkit-user-select: none; user-select: none; overflow-x: hidden; }
+        
+        /* Background Animated Icons */
+        .bg-medical-pattern {
+            position: fixed; inset: 0; z-index: 0; pointer-events: none; opacity: 0.4;
+            background: radial-gradient(circle at 0% 0%, #f0fdfa 0%, transparent 50%),
+                        radial-gradient(circle at 100% 100%, #ecfdf5 0%, transparent 50%);
+        }
+
+        .floating-icon { position: absolute; color: #0d9488; opacity: 0.15; }
+
+        /* Video UI */
+        .video-container { position: relative; width: 85vw; max-width: 320px; aspect-ratio: 1/1; background: #000; border-radius: 4rem; overflow: hidden; margin: auto; border: 4px solid #fff; box-shadow: 0 20px 50px rgba(13, 148, 136, 0.2); }
+        #video-feed { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
+        .face-guide { position: absolute; inset: 0; pointer-events: none; display: flex; align-items: center; justify-content: center; z-index: 20; }
+        .face-oval { width: 75%; height: 85%; border: 3px solid #0d9488; border-radius: 50%; background: transparent; box-shadow: 0 0 0 1000px rgba(0,0,0,0.6); }
+        
+        .scan-line { position: absolute; left: 0; right: 0; height: 4px; background: linear-gradient(to right, transparent, #2dd4bf, transparent); box-shadow: 0 0 15px #0d9488; animation: laser 2.5s infinite linear; z-index: 30; }
+        @keyframes laser { 0% { top: 10%; opacity: 0; } 10% { opacity: 1; } 90% { opacity: 1; } 100% { top: 90%; opacity: 0; } }
+
+        .employee-card { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); border: 1px solid #f1f5f9; }
+        .employee-card:hover { border-color: #0d9488; transform: translateY(-2px); box-shadow: 0 10px 20px -5px rgba(13, 148, 136, 0.1); }
+    </style>
+</head>
+<body class="text-slate-800">
+
+<!-- Animated Background -->
+<div class="bg-medical-pattern">
+    <div class="floating-icon animate-float top-[10%] left-[5%] text-4xl">✚</div>
+    <div class="floating-icon animate-float-slow top-[40%] right-[10%] text-5xl">♥</div>
+    <div class="floating-icon animate-float top-[70%] left-[15%] text-3xl">✚</div>
+    <div class="floating-icon animate-float-slow bottom-[10%] right-[20%] text-4xl">⚕</div>
+</div>
+
+<div class="app-container relative z-10 min-h-screen flex flex-col max-w-[480px] mx-auto pb-10">
+    <!-- HEADER -->
+    <header class="bg-white/80 backdrop-blur-md px-6 pt-12 pb-6 border-b border-teal-50 shadow-sm sticky top-0 z-[100]">
+        <div class="flex items-center gap-4">
+            <div class="w-12 h-12 bg-teal-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-teal-500/30 animate-pulse-soft">
+                <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>
+            </div>
+            <div>
+                <h1 class="text-2xl font-extrabold text-slate-800 tracking-tight leading-none">Pendaftaran Wajah</h1>
+                <p class="text-[10px] font-bold text-teal-600 uppercase tracking-[0.2em] mt-1">Sistem Biometrik Pegawai</p>
+            </div>
+        </div>
+    </header>
+
+    <!-- SEARCH & INFO -->
+    <div class="px-6 py-6 space-y-4">
+        <div class="relative group">
+            <input type="text" id="search-input" oninput="filterPegawai()" placeholder="Cari nama atau NIP petugas..." class="w-full bg-slate-50 border-2 border-slate-100 p-4 pl-12 rounded-[1.5rem] text-sm font-semibold outline-none focus:border-teal-500 focus:bg-white transition-all shadow-inner">
+            <div class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-teal-600 transition-colors">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+            </div>
+        </div>
+
+        <div class="flex justify-between items-center px-1">
+            <div class="flex flex-col">
+                <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest">Status Database</span>
+                <p id="count-label" class="text-xs font-bold text-slate-700">Memuat data...</p>
+            </div>
+            <div id="ai-status" class="flex items-center gap-2 bg-teal-50 px-3 py-1.5 rounded-full border border-teal-100 text-[9px] font-black text-teal-700 uppercase">
+                <span class="w-2 h-2 bg-amber-500 rounded-full animate-pulse"></span> MENYIAPKAN AI
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <main class="flex-1 px-6 space-y-3" id="employee-list">
+        <!-- Shimmer Loading -->
+        <div class="space-y-3 animate-pulse">
+            <div class="h-20 bg-slate-100 rounded-[1.5rem]"></div>
+            <div class="h-20 bg-slate-100 rounded-[1.5rem]"></div>
+            <div class="h-20 bg-slate-100 rounded-[1.5rem]"></div>
+        </div>
+    </main>
+
+    <!-- MODAL REGISTRASI -->
+    <div id="modal-regis" class="fixed inset-0 z-[1000] hidden flex flex-col bg-white overflow-y-auto">
+        <div class="flex justify-between items-center p-6 mt-6">
+            <div class="flex items-center gap-3">
+                <div class="w-1 h-8 bg-teal-600 rounded-full"></div>
+                <div>
+                    <h2 id="regis-name" class="text-xl font-black tracking-tight uppercase text-slate-800">Nama Pegawai</h2>
+                    <p class="text-[10px] text-teal-600 font-bold uppercase tracking-widest">Registrasi Identitas</p>
+                </div>
+            </div>
+            <button onclick="closeRegis()" class="w-12 h-12 bg-slate-100 rounded-2xl flex items-center justify-center text-xl text-slate-400 hover:bg-rose-50 hover:text-rose-500 transition-all">✕</button>
+        </div>
+        
+        <div class="flex-1 flex flex-col items-center justify-center p-6">
+            <div class="video-container">
+                <video id="video-feed" autoplay muted playsinline></video>
+                <div class="face-guide"><div class="face-oval"></div></div>
+                <div class="scan-line"></div>
+            </div>
+            <div class="mt-10 text-center space-y-2">
+                <div class="inline-flex items-center gap-2 px-4 py-2 bg-teal-50 rounded-full text-teal-700 border border-teal-100">
+                    <span class="relative flex h-2 w-2">
+                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-teal-400 opacity-75"></span>
+                        <span class="relative inline-flex rounded-full h-2 w-2 bg-teal-500"></span>
+                    </span>
+                    <p class="text-[10px] font-black uppercase tracking-widest">Kamera Aktif</p>
+                </div>
+                <p id="regis-status" class="text-xs font-semibold text-slate-400">Posisikan wajah Anda tepat di dalam lingkaran hijau</p>
+            </div>
+        </div>
+
+        <div class="p-6 pb-10">
+            <button id="btn-capture" onclick="captureFace()" class="w-full bg-teal-600 text-white py-5 rounded-[2rem] font-black uppercase tracking-[0.2em] shadow-xl shadow-teal-500/30 active:scale-95 transition-all text-sm">Simpan Identitas</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const CONFIG = {
+        WEB_APP_URL: "https://script.google.com/macros/s/AKfycbx2DTvUVkdZj4dnbAXuC7JSki9q-MUOgpl3nN6hh6ItU2OAt8QPmxVCuO2qqctg1grv/exec",
+        MODEL_URL: "https://cdn.jsdelivr.net/gh/justadudewhohacks/face-api.js@master/weights",
+        ADMIN_PIN: "123456"
+    };
+
+    let allEmployees = [];
+    let registeredList = [];
+    let selectedEmployee = null;
+    let isAiReady = false;
+
+    async function initAI() {
+        try {
+            await Promise.all([
+                faceapi.nets.tinyFaceDetector.loadFromUri(CONFIG.MODEL_URL),
+                faceapi.nets.faceLandmark68Net.loadFromUri(CONFIG.MODEL_URL),
+                faceapi.nets.faceRecognitionNet.loadFromUri(CONFIG.MODEL_URL)
+            ]);
+            isAiReady = true;
+            const statusBadge = document.getElementById('ai-status');
+            statusBadge.innerHTML = `<span class="w-2 h-2 bg-emerald-500 rounded-full"></span> AI ONLINE`;
+            statusBadge.classList.replace('bg-teal-50', 'bg-emerald-50');
+            statusBadge.classList.replace('text-teal-700', 'text-emerald-700');
+            fetchData();
+        } catch (e) { 
+            Swal.fire("Sistem Error", "Gagal menginisialisasi modul biometrik.", "error"); 
+        }
+    }
+
+    async function fetchData() {
+        try {
+            const resp = await fetch(`${CONFIG.WEB_APP_URL}?action=getData`);
+            const data = await resp.json();
+            allEmployees = data.officers;
+            registeredList = data.registeredFaces.map(f => f.name);
+            renderList(allEmployees);
+        } catch (e) { 
+            Swal.fire("Koneksi Gagal", "Gagal sinkronisasi dengan database pusat.", "error");
+        }
+    }
+
+    function renderList(list) {
+        const container = document.getElementById('employee-list');
+        document.getElementById('count-label').innerText = `${list.length} Orang Terdata`;
+        
+        container.innerHTML = list.map(emp => {
+            const isRegistered = registeredList.includes(emp.name);
+            return `
+            <div onclick="handleEmployeeClick('${emp.name}')" class="employee-card bg-white p-5 rounded-[1.5rem] flex items-center gap-4 active:bg-slate-50">
+                <div class="w-14 h-14 ${isRegistered ? 'bg-teal-600 text-white' : 'bg-slate-100 text-slate-400'} rounded-2xl flex items-center justify-center font-black text-lg uppercase transition-all shadow-inner">
+                    ${isRegistered ? '✓' : emp.name.charAt(0)}
+                </div>
+                <div class="flex-1 min-w-0">
+                    <h3 class="font-bold text-sm text-slate-800 truncate">${emp.name}</h3>
+                    <p class="text-[10px] font-bold text-slate-400 font-mono mt-0.5 tracking-tight">${emp.nip} • ${emp.jabatan}</p>
+                </div>
+                <div class="text-right">
+                    <span class="text-[8px] font-black uppercase tracking-widest ${isRegistered ? 'text-teal-600' : 'text-slate-300'}">
+                        ${isRegistered ? 'AKTIF' : 'KOSONG'}
+                    </span>
+                    <div class="w-2 h-2 rounded-full ml-auto mt-1 ${isRegistered ? 'bg-teal-500' : 'bg-slate-200'}"></div>
+                </div>
+            </div>`
+        }).join('');
+    }
+
+    async function handleEmployeeClick(name) {
+        if (!isAiReady) return;
+        
+        if (registeredList.includes(name)) {
+            const { value: pin } = await Swal.fire({
+                title: 'Reset Face ID?',
+                text: 'Hapus data wajah yang ada untuk mendaftar ulang?',
+                input: 'password',
+                inputPlaceholder: 'PIN Administrator',
+                showCancelButton: true,
+                confirmButtonColor: '#0d9488',
+                confirmButtonText: 'Verifikasi PIN'
+            });
+            
+            if (pin === CONFIG.ADMIN_PIN) {
+                Swal.fire({ title: 'Menghapus...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+                try {
+                    await fetch(CONFIG.WEB_APP_URL, {
+                        method: 'POST',
+                        body: JSON.stringify({ action: 'deleteFace', payload: { name } })
+                    });
+                    startRegistration(name);
+                } catch (e) { Swal.fire("Gagal", "Server tidak merespons.", "error"); }
+            } else if (pin) {
+                Swal.fire("PIN Salah", "Akses reset biometrik ditolak.", "error");
+            }
+        } else {
+            startRegistration(name);
+        }
+    }
+
+    async function startRegistration(name) {
+        selectedEmployee = allEmployees.find(e => e.name === name);
+        document.getElementById('regis-name').innerText = name;
+        document.getElementById('modal-regis').classList.remove('hidden');
+        
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ 
+                video: { facingMode: 'user', width: 640, height: 640 } 
+            });
+            document.getElementById('video-feed').srcObject = stream;
+        } catch (e) { 
+            Swal.fire("Kamera Error", "Gagal mengakses sensor kamera.", "error"); 
+            closeRegis();
+        }
+    }
+
+    async function captureFace() {
+        const video = document.getElementById('video-feed');
+        const btn = document.getElementById('btn-capture');
+        const status = document.getElementById('regis-status');
+        
+        btn.disabled = true;
+        btn.innerText = "MENGANALISIS...";
+        status.innerText = "Sistem sedang mempelajari fitur wajah...";
+
+        try {
+            const detection = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions())
+                .withFaceLandmarks()
+                .withFaceDescriptor();
+                
+            if (!detection) throw new Error("Wajah tidak terdeteksi dengan jelas.");
+
+            btn.innerText = "MENGUNGGAH...";
+
+            const payload = {
+                name: selectedEmployee.name,
+                descriptor: JSON.stringify(Array.from(detection.descriptor))
+            };
+
+            const resp = await fetch(CONFIG.WEB_APP_URL, {
+                method: 'POST',
+                body: JSON.stringify({ action: 'saveFace', payload })
+            });
+
+            const result = await resp.json();
+            if (result.status === 'success') {
+                localStorage.setItem(`face_${selectedEmployee.name.replace(/\s/g, '_')}`, payload.descriptor);
+                Swal.fire({ title: "Registrasi Berhasil", text: "Data biometrik kini tersimpan aman.", icon: "success", confirmButtonColor: "#0d9488" }).then(() => {
+                    closeRegis();
+                    fetchData();
+                });
+            }
+        } catch (e) { 
+            Swal.fire("Gagal", e.message, "error"); 
+        } finally { 
+            btn.disabled = false; 
+            btn.innerText = "Simpan Identitas"; 
+            status.innerText = "Posisikan wajah Anda tepat di dalam lingkaran hijau";
+        }
+    }
+
+    function closeRegis() {
+        const video = document.getElementById('video-feed');
+        if (video.srcObject) {
+            video.srcObject.getTracks().forEach(t => t.stop());
+            video.srcObject = null;
+        }
+        document.getElementById('modal-regis').classList.add('hidden');
+    }
+
+    function filterPegawai() {
+        const query = document.getElementById('search-input').value.toLowerCase();
+        const filtered = allEmployees.filter(emp => 
+            emp.name.toLowerCase().includes(query) || 
+            emp.nip.toLowerCase().includes(query)
+        );
+        renderList(filtered);
+    }
+
+    window.onload = initAI;
+</script>
+</body>
+</html>
