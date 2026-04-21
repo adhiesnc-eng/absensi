@@ -376,33 +376,53 @@
         }
     }
 
-    function checkGPS() {
-        if (!state.data || !state.data.config || !state.data.config.gpsLock) { 
-            state.isWithinRadius = true; 
-            const gt = document.getElementById('gps-text');
-            if(gt) gt.innerText = "GPS OFF";
-            return; 
-        }
-        navigator.geolocation.getCurrentPosition(pos => {
-            const latConfig = parseFloat(state.data.config.lat);
-            const lngConfig = parseFloat(state.data.config.lng);
-            const radiusConfig = parseFloat(state.data.config.radius) || 100;
-            const R = 6371e3; 
-            const dLat = (pos.coords.latitude - latConfig) * Math.PI/180;
-            const dLon = (pos.coords.longitude - lngConfig) * Math.PI/180;
-            const a = Math.sin(dLat/2)**2 + Math.cos(pos.coords.latitude*Math.PI/180)*Math.cos(latConfig*Math.PI/180)*Math.sin(dLon/2)**2;
-            const dist = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-            state.isWithinRadius = dist <= radiusConfig;
-            const gt = document.getElementById('gps-text');
-            if(gt) gt.innerText = state.isWithinRadius ? "LOKASI VALID" : `${Math.round(dist)}m LUAR AREA`;
-            const gd = document.getElementById('gps-dot');
-            if(gd) gd.className = state.isWithinRadius ? "w-1.5 h-1.5 rounded-full bg-emerald-400" : "w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse";
-        }, err => {
-            const gt = document.getElementById('gps-text');
-            if(gt) gt.innerText = err.code === 1 ? "IZIN LOKASI DITOLAK" : "GPS ERROR";
-            state.isWithinRadius = false;
-        }, { enableHighAccuracy: true });
+   function checkGPS() {
+    if (!state.data || !state.data.config || !state.data.config.gpsLock) { 
+        state.isWithinRadius = true; 
+        const gt = document.getElementById('gps-text');
+        if(gt) gt.innerText = "GPS OFF";
+        return; 
     }
+    
+    navigator.geolocation.getCurrentPosition(pos => {
+        // PERBAIKAN: Pastikan menggunakan parseFloat untuk konversi string ke angka desimal
+        const latConfig = parseFloat(state.data.config.lat);
+        const lngConfig = parseFloat(state.data.config.lng);
+        const radiusConfig = parseFloat(state.data.config.radius) || 100;
+        
+        const latUser = pos.coords.latitude;
+        const lngUser = pos.coords.longitude;
+
+        const R = 6371e3; // Radius bumi dalam meter
+        const phi1 = latConfig * Math.PI/180;
+        const phi2 = latUser * Math.PI/180;
+        const deltaPhi = (latUser - latConfig) * Math.PI/180;
+        const deltaLambda = (lngUser - lngConfig) * Math.PI/180;
+
+        const a = Math.sin(deltaPhi/2) * Math.sin(deltaPhi/2) +
+                  Math.cos(phi1) * Math.cos(phi2) *
+                  Math.sin(deltaLambda/2) * Math.sin(deltaLambda/2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        const dist = R * c; // Hasil dalam meter
+
+        state.isWithinRadius = dist <= radiusConfig;
+        
+        const gt = document.getElementById('gps-text');
+        if(gt) gt.innerText = state.isWithinRadius ? "LOKASI VALID" : `${Math.round(dist)}m LUAR AREA`;
+        
+        const gd = document.getElementById('gps-dot');
+        if(gd) gd.className = state.isWithinRadius ? "w-1.5 h-1.5 rounded-full bg-emerald-400" : "w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse";
+    }, err => {
+        console.error("GPS Error:", err);
+        const gt = document.getElementById('gps-text');
+        if(gt) gt.innerText = "GPS ERROR / IZIN DITOLAK";
+        state.isWithinRadius = false;
+    }, { 
+        enableHighAccuracy: true, // WAJIB: Agar akurasi GPS lebih tajam
+        timeout: 5000,
+        maximumAge: 0 
+    });
+}
 
     function updateCountdown() {
         if (!state.data || !state.data.config) return;
