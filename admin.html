@@ -449,11 +449,12 @@
     }
 
     async function saveSettings() {
-        const payload = {
-            action: 'updateSettings',
-            lat: document.getElementById('conf-lat').value,
-            lng: document.getElementById('conf-lng').value,
-            radius: document.getElementById('conf-radius').value,
+    const payload = {
+        action: 'updateSettings',
+        // Tambahkan .replace untuk antisipasi jika user input menggunakan koma
+        lat: document.getElementById('conf-lat').value.toString().replace(',', '.'),
+        lng: document.getElementById('conf-lng').value.toString().replace(',', '.'),
+        radius: document.getElementById('conf-radius').value,
             gpsLock: document.getElementById('conf-gpslock').checked,
             workTimeActive: document.getElementById('conf-worktime-active').checked,
             notifActive: document.getElementById('conf-notif-active').checked,
