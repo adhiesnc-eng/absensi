@@ -426,11 +426,15 @@
         }
     }
 
-    function renderConfig() {
-        const c = state.data.config || {};
-        document.getElementById('conf-lat').value = c.lat || "";
-        document.getElementById('conf-lng').value = c.lng || "";
-        document.getElementById('conf-radius').value = c.radius || "100";
+    // Cari fungsi renderConfig() dan sesuaikan baris awal
+function renderConfig() {
+    const c = state.data.config || {};
+    // Mengatur default ke koordinat baru Anda jika di database masih kosong
+    document.getElementById('conf-lat').value = c.lat || "-2.6370178"; 
+    document.getElementById('conf-lng').value = c.lng || "116.2036628";
+    document.getElementById('conf-radius').value = c.radius || "100";
+    // ... sisa kode tetap sama
+}
         document.getElementById('conf-gpslock').checked = (c.gpsLock === true || c.gpsLock === "TRUE");
         document.getElementById('conf-worktime-active').checked = (c.workTimeActive !== false && c.workTimeActive !== "FALSE");
         
