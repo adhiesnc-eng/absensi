@@ -426,15 +426,11 @@
         }
     }
 
-    // Cari fungsi renderConfig() dan sesuaikan baris awal
-function renderConfig() {
-    const c = state.data.config || {};
-    // Mengatur default ke koordinat baru Anda jika di database masih kosong
-    document.getElementById('conf-lat').value = c.lat || "-2.6370178"; 
-    document.getElementById('conf-lng').value = c.lng || "116.2036628";
-    document.getElementById('conf-radius').value = c.radius || "100";
-    // ... sisa kode tetap sama
-}
+    function renderConfig() {
+        const c = state.data.config || {};
+        document.getElementById('conf-lat').value = c.lat || "";
+        document.getElementById('conf-lng').value = c.lng || "";
+        document.getElementById('conf-radius').value = c.radius || "100";
         document.getElementById('conf-gpslock').checked = (c.gpsLock === true || c.gpsLock === "TRUE");
         document.getElementById('conf-worktime-active').checked = (c.workTimeActive !== false && c.workTimeActive !== "FALSE");
         
@@ -453,12 +449,11 @@ function renderConfig() {
     }
 
     async function saveSettings() {
-    const payload = {
-        action: 'updateSettings',
-        // Tambahkan .replace untuk antisipasi jika user input menggunakan koma
-        lat: document.getElementById('conf-lat').value.toString().replace(',', '.'),
-        lng: document.getElementById('conf-lng').value.toString().replace(',', '.'),
-        radius: document.getElementById('conf-radius').value,
+        const payload = {
+            action: 'updateSettings',
+            lat: document.getElementById('conf-lat').value,
+            lng: document.getElementById('conf-lng').value,
+            radius: document.getElementById('conf-radius').value,
             gpsLock: document.getElementById('conf-gpslock').checked,
             workTimeActive: document.getElementById('conf-worktime-active').checked,
             notifActive: document.getElementById('conf-notif-active').checked,
